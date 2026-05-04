@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel-queue
+  namespace: app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: laravel-queue
+
+  template:
+    metadata:
+      labels:
+        app: laravel-queue
+
+    spec:
+      containers:
+      - name: queue
+        image: zauzj/ppdb-smp:v1.0.3
+
+        command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
+
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "400m"
+            memory: "512Mi"
+
+        securityContext:
+          allowPrivilegeEscalation: false
+
+        livenessProbe:
+          exec:
+            command:
+            - pgrep
+            - php
+          initialDelaySeconds: 20
+          periodSeconds: 10
+
+        restartPolicy: Always

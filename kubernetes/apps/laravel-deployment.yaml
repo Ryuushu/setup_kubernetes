@@ -1,0 +1,144 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: laravel
+  namespace: app
+
+spec:
+  replicas: 1
+
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+      maxSurge: 1
+
+  selector:
+    matchLabels:
+      app: laravel
+
+  template:
+    metadata:
+      labels:
+        app: laravel
+
+    spec:
+      serviceAccountName: laravel-sa
+
+      securityContext:
+        runAsUser: 33
+        runAsGroup: 33
+        fsGroup: 33
+
+      # =========================
+      # VOLUMES
+      # =========================
+      volumes:
+        # USER UPLOADS (NFS / PVC)
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: laravel-storage-pvc
+
+        - name: logs
+          emptyDir: {}
+
+        - name: framework
+          emptyDir: {}
+
+        - name: cache
+          emptyDir: {}
+
+      # =========================
+      # INIT CONTAINER (ONLY PERMISSION FIX)
+      # =========================
+      initContainers:
+        - name: fix-permission
+          image: busybox
+          command:
+          - sh
+          - -c
+          - |
+            echo "Fixing storage..."
+
+            mkdir -p /var/www/storage/framework/cache/data
+            mkdir -p /var/www/storage/framework/sessions
+            mkdir -p /var/www/storage/framework/views
+            mkdir -p /var/www/storage/logs
+
+            chown -R 33:33 /var/www/storage /var/www/bootstrap/cache
+            chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+  
+          securityContext:
+            runAsUser: 0
+
+          volumeMounts:      
+            - name: uploads
+              mountPath: /var/www/storage/app/public
+            - name: logs
+              mountPath: /var/www/storage/logs
+
+            - name: framework
+              mountPath: /var/www/storage/framework
+
+            - name: cache
+              mountPath: /var/www/bootstrap/cache
+      # =========================
+      # MAIN CONTAINER
+      # =========================
+      containers:
+        - name: laravel
+          image: zauzj/ppdb-smp:v1.0.3
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - containerPort: 9000
+
+          envFrom:
+            - secretRef:
+                name: laravel-env
+
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "256Mi"
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+
+          securityContext:
+            runAsUser: 33
+            runAsGroup: 33
+            allowPrivilegeEscalation: false
+
+          # =========================
+          # VOLUME MOUNTS
+          # =========================
+          volumeMounts:
+          - name: uploads
+            mountPath: /var/www/storage/app/public
+          - name: logs
+            mountPath: /var/www/storage/logs
+
+          - name: framework
+            mountPath: /var/www/storage/framework
+
+          - name: cache
+            mountPath: /var/www/bootstrap/cache
+
+          # =========================
+          # PROBES (IMPORTANT FIX)
+          # PHP-FPM = TCP, NOT HTTP
+          # =========================
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
