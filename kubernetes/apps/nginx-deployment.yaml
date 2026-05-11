@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
       - name: nginx
-        image: zauzj/nginx-ppdb:v1.0.3
+        image: zauzj/nginx-ppdb:v1.0.12
 
         ports:
         - containerPort: 80

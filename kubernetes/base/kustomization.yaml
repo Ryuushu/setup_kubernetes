@@ -7,6 +7,5 @@ resources:
   - networkpolicy.yaml
   - configmap.yaml
   - secret.yaml
-  - app-secret.yaml
   - laravel-env.yaml
   - nfs/

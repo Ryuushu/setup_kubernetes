@@ -87,7 +87,7 @@ spec:
       # =========================
       containers:
         - name: laravel
-          image: zauzj/ppdb-smp:v1.0.3
+          image: zauzj/ppdb-smp:v1.0.12
           imagePullPolicy: IfNotPresent
 
           ports:

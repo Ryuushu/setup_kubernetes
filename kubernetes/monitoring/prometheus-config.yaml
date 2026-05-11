@@ -19,46 +19,93 @@ data:
           - targets: ["localhost:9090"]
 
       # =========================
-      # NODE EXPORTER (CPU/RAM/DISK)
+      # NODE EXPORTER
       # =========================
       - job_name: "node-exporter"
+
         kubernetes_sd_configs:
           - role: pod
 
         relabel_configs:
+
+          # Ambil hanya pod node exporter
           - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
             action: keep
             regex: prometheus-node-exporter
 
+          # Set instance = node name
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: instance
+
+          # Set nodename
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: nodename
+
+          # Tambahkan namespace
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+
+          # Gunakan IP pod + port 9100
+          - source_labels: [__meta_kubernetes_pod_ip]
+            action: replace
+            regex: (.+)
+            replacement: $1:9100
+            target_label: __address__
+
       # =========================
-      # KUBE STATE METRICS (K8s objects)
+      # KUBE STATE METRICS
       # =========================
       - job_name: "kube-state-metrics"
+
         kubernetes_sd_configs:
           - role: pod
 
         relabel_configs:
+
           - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
             action: keep
             regex: kube-state-metrics
 
+          - source_labels: [__meta_kubernetes_pod_ip]
+            action: replace
+            regex: (.+)
+            replacement: $1:8080
+            target_label: __address__
+
       # =========================
-      # APPLICATION PODS (ONLY ANNOTATED)
+      # APPLICATION PODS
       # =========================
       - job_name: "kubernetes-pods"
+
         kubernetes_sd_configs:
           - role: pod
 
         relabel_configs:
 
-          # ONLY scrape pods with annotation
+          # scrape only annotated pods
           - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
             action: keep
             regex: "true"
 
-          # FIX: proper port mapping (NO 9100:80 BUG)
+          # custom port
           - source_labels: [__meta_kubernetes_pod_ip, __meta_kubernetes_pod_annotation_prometheus_io_port]
             action: replace
             regex: (.+);(.+)
             replacement: $1:$2
             target_label: __address__
+
+          # path
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            regex: (.+)
+            target_label: __metrics_path__
+
+          # labels
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+
+          - source_labels: [__meta_kubernetes_pod_node_name]
+            target_label: node

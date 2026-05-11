@@ -1,10 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
+
 metadata:
   name: laravel-queue
   namespace: app
+
 spec:
   replicas: 1
+
   selector:
     matchLabels:
       app: laravel-queue
@@ -15,29 +18,108 @@ spec:
         app: laravel-queue
 
     spec:
+      restartPolicy: Always
+
+      securityContext:
+        fsGroup: 33
+        runAsGroup: 33
+        runAsUser: 33
+
+      initContainers:
+      - name: fix-permission
+        image: busybox
+        securityContext:
+          runAsUser: 0
+
+        command:
+          - sh
+          - -c
+          - |
+            mkdir -p /var/www/storage/framework/cache/data
+            mkdir -p /var/www/storage/framework/sessions
+            mkdir -p /var/www/storage/framework/views
+            mkdir -p /var/www/storage/logs
+
+            chown -R 33:33 /var/www/storage /var/www/bootstrap/cache
+            chmod -R 775 /var/www/storage /var/www/bootstrap/cache
+
+        volumeMounts:
+          - name: uploads
+            mountPath: /var/www/storage/app/public
+
+          - name: logs
+            mountPath: /var/www/storage/logs
+
+          - name: framework
+            mountPath: /var/www/storage/framework
+
+          - name: cache
+            mountPath: /var/www/bootstrap/cache
+
       containers:
       - name: queue
-        image: zauzj/ppdb-smp:v1.0.3
+        image: zauzj/ppdb-smp:v1.0.12
+        imagePullPolicy: IfNotPresent
 
-        command: ["php", "artisan", "queue:work", "--tries=3", "--timeout=90"]
+        command:
+          - php
+          - artisan
+          - queue:work
+          - --tries=3
+          - --timeout=90
+          - --sleep=3
+          - --max-time=3600
+          - --memory=256
+        envFrom:
+          - secretRef:
+              name: laravel-env
 
         resources:
           requests:
             cpu: "200m"
             memory: "256Mi"
+
           limits:
             cpu: "400m"
             memory: "512Mi"
 
         securityContext:
           allowPrivilegeEscalation: false
+          runAsGroup: 33
+          runAsUser: 33
 
         livenessProbe:
           exec:
             command:
-            - pgrep
-            - php
+              - pgrep
+              - php
+
           initialDelaySeconds: 20
           periodSeconds: 10
 
-        restartPolicy: Always
+        volumeMounts:
+          - name: uploads
+            mountPath: /var/www/storage/app/public
+
+          - name: logs
+            mountPath: /var/www/storage/logs
+
+          - name: framework
+            mountPath: /var/www/storage/framework
+
+          - name: cache
+            mountPath: /var/www/bootstrap/cache
+
+      volumes:
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: laravel-storage-pvc
+
+        - name: logs
+          emptyDir: {}
+
+        - name: framework
+          emptyDir: {}
+
+        - name: cache
+          emptyDir: {}

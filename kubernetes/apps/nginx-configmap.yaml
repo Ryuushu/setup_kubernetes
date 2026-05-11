@@ -21,7 +21,7 @@ data:
     }
 
     location ~ \.php$ {
-        fastcgi_pass laravel-app.app.svc.cluster.local:9000;
+        fastcgi_pass laravel.app.svc.cluster.local:9000;
         fastcgi_index index.php;
         include fastcgi_params;
         fastcgi_param SCRIPT_FILENAME /var/www/public$fastcgi_script_name;
