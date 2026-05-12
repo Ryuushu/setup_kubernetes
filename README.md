@@ -54,6 +54,12 @@ tar xzf ./actions-runner-linux-x64-2.334.0.tar.gz
 ./run.sh
 ```
 
+## Run kubernet
+```bash
+cd /home/kelompok17/project
+kubectl apply -k kubernetes/
+```
+
 
 # Restart Kubernetes Commands
 workdir atau folder kerja di /home/kelompok17/project
