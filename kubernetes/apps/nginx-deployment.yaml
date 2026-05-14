@@ -59,10 +59,10 @@ spec:
           timeoutSeconds: 3
 
       volumes:
-      - name: uploads
-        persistentVolumeClaim:
-          claimName: laravel-storage-pvc
-          
-      - name: public-build
-        persistentVolumeClaim:
-          claimName: laravel-public-pvc
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: laravel-storage-pvc
+            
+        - name: public-build
+          persistentVolumeClaim:
+            claimName: laravel-public-pvc
