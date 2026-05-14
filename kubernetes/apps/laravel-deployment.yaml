@@ -79,9 +79,6 @@ spec:
             - name: uploads
               mountPath: /var/www/storage/app/public
               
-            - name: public-build
-              mountPath: /var/www/public
-              
             - name: logs
               mountPath: /var/www/storage/logs
 
@@ -124,8 +121,7 @@ spec:
           volumeMounts:
           - name: uploads
             mountPath: /var/www/storage/app/public
-          - name: public-build
-            mountPath: /var/www/public
+
           - name: logs
             mountPath: /var/www/storage/logs
 
