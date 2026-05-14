@@ -40,7 +40,8 @@ spec:
             claimName: laravel-storage-pvc
             
         - name: public-build
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: laravel-public-pvc
 
         - name: logs
           emptyDir: {}
@@ -121,6 +122,8 @@ spec:
           volumeMounts:
           - name: uploads
             mountPath: /var/www/storage/app/public
+          - name: public-build
+            mountPath: /var/www/public
           - name: logs
             mountPath: /var/www/storage/logs
 
