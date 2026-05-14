@@ -24,6 +24,8 @@ spec:
         volumeMounts:
         - name: uploads
           mountPath: /var/www/storage/app/public
+        - name: public-build
+          mountPath: /var/www/public
 
         ports:
         - containerPort: 80
@@ -59,3 +61,5 @@ spec:
       - name: uploads
         persistentVolumeClaim:
           claimName: laravel-storage-pvc
+      - name: public-build
+        emptyDir: {}
