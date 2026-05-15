@@ -395,7 +395,7 @@
       }
     }
   ],
-  "refresh": "30s",
+  "refresh": "90s",
   "schemaVersion": 38,
   "tags": [
     "kubernetes",
