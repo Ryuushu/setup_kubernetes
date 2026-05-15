@@ -405,7 +405,7 @@ Upload dashboard JSON file
 Select file:
 
 ```text
-dashboard loki.json
+[dashboard loki.json](./dashboard loki.json)
 ```
 
 ---
