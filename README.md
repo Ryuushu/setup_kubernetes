@@ -186,6 +186,8 @@ kubectl apply -k kubernetes/
 ```
 masuk ke pod lalu lakukan php artisan migrate --seed
 ---
+
+---
 # Monitoring Stack (Grafana + Prometheus + Loki) on K3s
 
 ## Overview
