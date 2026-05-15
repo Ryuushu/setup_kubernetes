@@ -205,9 +205,7 @@ This repository contains a monitoring stack deployment for Kubernetes/K3s using:
 Open browser:
 
 ```text
-http://grafana.monitoring.svc.cluster.local:32000
-http://prometheus.monitoring.svc.cluster.local:32000
-http://loki.monitoring.svc.cluster.local:32000
+http://<IP SERVER>:32000
 ```
 ---
 
@@ -462,35 +460,7 @@ Refresh the page multiple times to verify request distribution between pods.
 
 ---
 
-# Monitoring
-
-## Grafana
-
-URL:
-
-```text
-http://IP_SERVER:32000
-```
-
-Default login:
-
-```text
-Username: admin
-Password: admin
-```
-
 ---
-
-## Prometheus
-
-URL:
-
-```text
-http://IP_SERVER:32001
-```
-
----
-
 ## phpMyAdmin
 
 URL:
