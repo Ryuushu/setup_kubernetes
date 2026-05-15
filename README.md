@@ -186,6 +186,203 @@ kubectl apply -k kubernetes/
 ```
 masuk ke pod lalu lakukan php artisan migrate --seed
 ---
+# Monitoring Stack (Grafana + Prometheus + Loki) on K3s
+
+## Overview
+
+This repository contains a monitoring stack deployment for Kubernetes/K3s using:
+
+- Grafana
+- Prometheus
+- Loki
+
+---
+
+# Login to Grafana
+
+Open browser:
+
+```text
+http://grafana.monitoring.svc.cluster.local:32000
+http://prometheus.monitoring.svc.cluster.local:32000
+http://loki.monitoring.svc.cluster.local:32000
+```
+---
+
+# Add Prometheus Datasource
+
+Usually auto-configured by kube-prometheus-stack.
+
+Check datasource:
+
+1. Open Grafana
+2. Go to:
+
+```text
+Connections → Data Sources
+```
+
+3. Verify Prometheus exists
+
+Default URL:
+
+```text
+http://prometheus.monitoring.svc.cluster.local:9090
+```
+
+---
+
+# Manual Add Prometheus Datasource
+
+If datasource does not exist:
+
+## Open Datasource Menu
+
+```text
+Connections → Data Sources → Add data source
+```
+
+Select:
+
+```text
+Prometheus
+```
+
+---
+
+## Configure URL
+
+```text
+http://prometheus.monitoring.svc.cluster.local:9090
+```
+
+---
+
+## Save and Test
+
+Click:
+
+```text
+Save & Test
+```
+
+Expected result:
+
+```text
+Data source is working
+```
+
+---
+
+# Add Loki Datasource
+
+## Add Data Source
+
+Go to:
+
+```text
+Connections → Data Sources → Add data source
+```
+
+Select:
+
+```text
+Loki
+```
+
+---
+
+## Configure Loki URL
+
+```text
+http://loki.monitoring.svc.cluster.local:3100
+```
+
+---
+
+## Save and Test
+
+Click:
+
+```text
+Save & Test
+```
+
+Expected result:
+
+```text
+Data source connected successfully
+```
+
+---
+
+# Import Kubernetes Dashboard
+
+## Open Dashboard Import
+
+```text
+Dashboards → Import
+```
+
+---
+
+## Import Dashboard ID
+
+Popular Kubernetes dashboards:
+
+| Dashboard | ID |
+|---|---|
+| Kubernetes Cluster Monitoring | 315 |
+| Node Exporter Full | 1860 |
+| Kubernetes Pod Monitoring | 6417 |
+
+Example:
+
+```text
+1860
+```
+
+---
+
+## Select Datasource
+
+Choose:
+
+```text
+Prometheus
+```
+
+Click:
+
+```text
+Import
+```
+
+---
+
+# Explore Metrics
+
+Go to:
+
+```text
+Explore
+```
+
+Select datasource:
+
+```text
+Prometheus
+```
+
+Example query:
+
+```promql
+up
+```
+
+
+
+---
 
 # Restart Kubernetes
 
