@@ -380,6 +380,36 @@ Example query:
 up
 ```
 
+---
+
+# Import Loki Dashboard JSON
+
+After Loki datasource is working:
+
+Open Grafana sidebar:
+
+```text
+Dashboards → New → Import
+```
+
+---
+
+# Upload JSON Dashboard
+
+Click:
+
+```text
+Upload dashboard JSON file
+```
+
+Select file:
+
+```text
+dashboard loki.json
+```
+
+---
+
 
 
 ---
