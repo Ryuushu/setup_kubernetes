@@ -1,6 +1,6 @@
 # Kubernetes Deployment Setup
 
-Deployment documentation for Kubernetes environment using K3s, Docker, NFS Storage, Prometheus, Grafana, Loki, Promtail, and GitHub Actions Runner.
+Dokumentasi deployment Kubernetes menggunakan K3s, Docker, NFS Storage, Prometheus, Grafana, Loki, Promtail, dan GitHub Actions Runner.
 
 ---
 
@@ -12,9 +12,9 @@ Deployment documentation for Kubernetes environment using K3s, Docker, NFS Stora
 - [NFS Storage Setup](#nfs-storage-setup)
 - [GitHub Runner Setup](#github-runner-setup)
 - [Deploy Application](#deploy-application)
+- [Monitoring Stack](#monitoring-stack-grafana--prometheus--loki-on-k3s)
 - [Restart Kubernetes](#restart-kubernetes)
 - [Testing](#testing)
-- [Monitoring](#monitoring)
 - [Useful Kubernetes Commands](#useful-kubernetes-commands)
 - [Troubleshooting](#troubleshooting)
 - [Ports](#ports)
@@ -23,22 +23,22 @@ Deployment documentation for Kubernetes environment using K3s, Docker, NFS Stora
 
 # Architecture
 
-Components used in this Kubernetes environment:
+Komponen yang digunakan pada environment Kubernetes ini:
 
-- **K3s** → Lightweight Kubernetes distribution
+- **K3s** → Distribusi Kubernetes ringan
 - **Docker** → Container runtime
-- **NFS Server** → Persistent shared storage
-- **Prometheus** → Metrics collector
-- **Grafana** → Metrics visualization
+- **NFS Server** → Shared persistent storage
+- **Prometheus** → Pengumpul metrics
+- **Grafana** → Visualisasi metrics
 - **Loki** → Log aggregation
-- **Promtail** → Log shipping
-- **GitHub Actions Runner** → CI/CD automation
+- **Promtail** → Pengirim log ke Loki
+- **GitHub Actions Runner** → Otomasi CI/CD
 
 ---
 
 # Access Services
 
-Replace `IP_SERVER` with your VPS or Kubernetes node IP address.
+Ganti `IP_SERVER` dengan IP VPS atau node Kubernetes Anda.
 
 | Service | URL | Port |
 |---|---|---|
@@ -53,11 +53,21 @@ Replace `IP_SERVER` with your VPS or Kubernetes node IP address.
 
 ## Install Dependencies
 
+Install package yang dibutuhkan:
+
 ```bash
 apt install -y zip unzip curl docker.io nfs-kernel-server
+```
 
+Aktifkan Docker:
+
+```bash
 systemctl enable docker
+```
 
+Cek versi Docker:
+
+```bash
 docker --version
 ```
 
@@ -65,17 +75,35 @@ docker --version
 
 ## Install K3s
 
+Install K3s menggunakan IP server:
+
 ```bash
 curl -sfL https://get.k3s.io | INSTALL_K3S_EXEC="--node-ip 103.157.27.242 --advertise-address 103.157.27.242" sh -
+```
 
+Set environment Kubernetes:
+
+```bash
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+```
 
+Buat konfigurasi kube:
+
+```bash
 mkdir -p /root/.kube
 
 cp /etc/rancher/k3s/k3s.yaml /root/.kube/config
+```
 
+Verifikasi node Kubernetes:
+
+```bash
 kubectl get nodes
+```
 
+Cek pod bawaan K3s:
+
+```bash
 kubectl get pods -n kube-system
 ```
 
@@ -83,11 +111,21 @@ kubectl get pods -n kube-system
 
 ## Install Helm
 
+Install Helm:
+
 ```bash
 curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+```
 
+Tambahkan repository Prometheus:
+
+```bash
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+```
 
+Update repository Helm:
+
+```bash
 helm repo update
 ```
 
@@ -95,11 +133,17 @@ helm repo update
 
 ## Install Monitoring Stack
 
+Install Node Exporter:
+
 ```bash
 helm install node-exporter prometheus-community/prometheus-node-exporter \
   -n monitoring \
   --create-namespace
+```
 
+Install kube-state-metrics:
+
+```bash
 helm install kube-state-metrics prometheus-community/kube-state-metrics \
   -n monitoring
 ```
@@ -110,11 +154,21 @@ helm install kube-state-metrics prometheus-community/kube-state-metrics \
 
 ## Create NFS Directory
 
+Buat direktori storage untuk Kubernetes:
+
 ```bash
 mkdir -p /ifs/kubernetes
+```
 
+Atur ownership:
+
+```bash
 chown -R nobody:nogroup /ifs/kubernetes
+```
 
+Atur permission:
+
+```bash
 chmod 777 /ifs/kubernetes
 ```
 
@@ -122,17 +176,27 @@ chmod 777 /ifs/kubernetes
 
 ## Configure NFS Export
 
-Edit `/etc/exports`
+Edit file:
+
+```text
+/etc/exports
+```
+
+Tambahkan konfigurasi berikut:
 
 ```bash
 /ifs/kubernetes *(rw,sync,no_subtree_check,no_root_squash)
 ```
 
-Apply configuration:
+Apply konfigurasi NFS:
 
 ```bash
 exportfs -ra
+```
 
+Restart service NFS:
+
+```bash
 systemctl restart nfs-kernel-server
 ```
 
@@ -140,15 +204,23 @@ systemctl restart nfs-kernel-server
 
 # NFS Client Provisioner
 
-ubah ip ke ip server
+Pastikan IP server pada file deployment sudah sesuai dengan IP VPS Kubernetes.
+
 ## deployment.yaml
 
+Contoh konfigurasi:
+
+```yaml
+nfs:
+  server: 103.157.27.242
+  path: /ifs/kubernetes
+```
 
 ---
 
 # GitHub Runner Setup
 
-Open your GitHub repository:
+Buka repository GitHub:
 
 ```text
 Repository → Actions → Runners
@@ -158,20 +230,42 @@ Repository → Actions → Runners
 
 ## Install GitHub Actions Runner
 
+Buat direktori runner:
+
 ```bash
 mkdir actions-runner && cd actions-runner
+```
 
+Download runner:
+
+```bash
 curl -o actions-runner-linux-x64-2.334.0.tar.gz -L \
 https://github.com/actions/runner/releases/download/v2.334.0/actions-runner-linux-x64-2.334.0.tar.gz
+```
 
+Verifikasi checksum:
+
+```bash
 echo "048024cd2c848eb6f14d5646d56c13a4def2ae7ee3ad12122bee960c56f3d271  actions-runner-linux-x64-2.334.0.tar.gz" | shasum -a 256 -c
+```
 
+Extract file:
+
+```bash
 tar xzf ./actions-runner-linux-x64-2.334.0.tar.gz
+```
 
+Konfigurasi runner:
+
+```bash
 ./config.sh \
   --url https://github.com/Ryuushu/ppdb-smp \
   --token <GITHUB_RUNNER_TOKEN>
+```
 
+Jalankan runner:
+
+```bash
 ./run.sh
 ```
 
@@ -179,20 +273,33 @@ tar xzf ./actions-runner-linux-x64-2.334.0.tar.gz
 
 # Deploy Application
 
+Masuk ke directory project:
+
 ```bash
 cd /home/kelompok17/project/setup_kubernates
+```
 
+Deploy manifest Kubernetes:
+
+```bash
 kubectl apply -k kubernetes/
 ```
-masuk ke pod lalu lakukan php artisan migrate --seed
+
+Masuk ke pod Laravel lalu jalankan migrate dan seeder:
+
+```bash
+php artisan migrate --seed
+```
+
 ---
 
 ---
+
 # Monitoring Stack (Grafana + Prometheus + Loki) on K3s
 
 ## Overview
 
-This repository contains a monitoring stack deployment for Kubernetes/K3s using:
+Repository ini menggunakan monitoring stack Kubernetes berbasis:
 
 - Grafana
 - Prometheus
@@ -202,27 +309,28 @@ This repository contains a monitoring stack deployment for Kubernetes/K3s using:
 
 # Login to Grafana
 
-Open browser:
+Buka browser:
 
 ```text
-http://<IP SERVER>:32000
+http://<IP_SERVER>:32000
 ```
+
 ---
 
 # Add Prometheus Datasource
 
-Usually auto-configured by kube-prometheus-stack.
+Biasanya datasource Prometheus otomatis dibuat oleh kube-prometheus-stack.
 
-Check datasource:
+Cek datasource:
 
-1. Open Grafana
-2. Go to:
+1. Buka Grafana
+2. Masuk ke:
 
 ```text
 Connections → Data Sources
 ```
 
-3. Verify Prometheus exists
+3. Pastikan datasource Prometheus tersedia.
 
 Default URL:
 
@@ -234,7 +342,7 @@ http://prometheus.monitoring.svc.cluster.local:9090
 
 # Manual Add Prometheus Datasource
 
-If datasource does not exist:
+Jika datasource belum tersedia:
 
 ## Open Datasource Menu
 
@@ -242,7 +350,7 @@ If datasource does not exist:
 Connections → Data Sources → Add data source
 ```
 
-Select:
+Pilih:
 
 ```text
 Prometheus
@@ -260,13 +368,13 @@ http://prometheus.monitoring.svc.cluster.local:9090
 
 ## Save and Test
 
-Click:
+Klik:
 
 ```text
 Save & Test
 ```
 
-Expected result:
+Hasil yang diharapkan:
 
 ```text
 Data source is working
@@ -278,13 +386,13 @@ Data source is working
 
 ## Add Data Source
 
-Go to:
+Masuk ke:
 
 ```text
 Connections → Data Sources → Add data source
 ```
 
-Select:
+Pilih:
 
 ```text
 Loki
@@ -302,13 +410,13 @@ http://loki.monitoring.svc.cluster.local:3100
 
 ## Save and Test
 
-Click:
+Klik:
 
 ```text
 Save & Test
 ```
 
-Expected result:
+Hasil yang diharapkan:
 
 ```text
 Data source connected successfully
@@ -328,7 +436,7 @@ Dashboards → Import
 
 ## Import Dashboard ID
 
-Popular Kubernetes dashboards:
+Dashboard populer Kubernetes:
 
 | Dashboard | ID |
 |---|---|
@@ -336,7 +444,7 @@ Popular Kubernetes dashboards:
 | Node Exporter Full | 1860 |
 | Kubernetes Pod Monitoring | 6417 |
 
-Example:
+Contoh:
 
 ```text
 1860
@@ -346,13 +454,13 @@ Example:
 
 ## Select Datasource
 
-Choose:
+Pilih datasource:
 
 ```text
 Prometheus
 ```
 
-Click:
+Klik:
 
 ```text
 Import
@@ -362,19 +470,19 @@ Import
 
 # Explore Metrics
 
-Go to:
+Masuk ke menu:
 
 ```text
 Explore
 ```
 
-Select datasource:
+Pilih datasource:
 
 ```text
 Prometheus
 ```
 
-Example query:
+Contoh query:
 
 ```promql
 up
@@ -384,9 +492,9 @@ up
 
 # Import Loki Dashboard JSON
 
-After Loki datasource is working:
+Setelah datasource Loki berhasil ditambahkan:
 
-Open Grafana sidebar:
+Buka sidebar Grafana:
 
 ```text
 Dashboards → New → Import
@@ -394,22 +502,21 @@ Dashboards → New → Import
 
 ---
 
-# Upload JSON Dashboard
+# Upload Dashboard JSON
 
-Click:
+Klik:
 
 ```text
 Upload dashboard JSON file
 ```
 
-Select file:
+Pilih file:
 
-[dashboard loki.json](./dashboard%20loki.json)
-
+```text
+dashboard loki.json
+```
 
 ---
-
-
 
 ---
 
@@ -423,14 +530,24 @@ Working directory:
 
 ---
 
-## Restart K3s and Monitoring Components
+## Restart K3s dan Monitoring Components
+
+Restart service K3s:
 
 ```bash
 systemctl restart k3s
+```
 
+Upgrade Node Exporter:
+
+```bash
 helm upgrade node-exporter prometheus-community/prometheus-node-exporter \
   -n monitoring
+```
 
+Upgrade kube-state-metrics:
+
+```bash
 helm upgrade kube-state-metrics prometheus-community/kube-state-metrics \
   -n monitoring
 ```
@@ -447,9 +564,11 @@ kubectl apply -k kubernetes/
 
 # Testing
 
-# Horizontal Pod Autoscaler (HPA)
+## Horizontal Pod Autoscaler (HPA)
 
-## Generate Load
+### Generate Load
+
+Jalankan container busybox:
 
 ```bash
 kubectl run load-generator \
@@ -459,7 +578,7 @@ kubectl run load-generator \
   -- sh
 ```
 
-Inside the container:
+Di dalam container:
 
 ```bash
 while true; do
@@ -471,7 +590,7 @@ done
 
 ## Monitor HPA
 
-Open another terminal:
+Buka terminal lain:
 
 ```bash
 kubectl get hpa -n app -w
@@ -479,17 +598,18 @@ kubectl get hpa -n app -w
 
 ---
 
-# Load Balancing
+## Load Balancing
+
+Akses endpoint berikut:
 
 ```text
 http://IP_SERVER/debug/host
 ```
 
-Refresh the page multiple times to verify request distribution between pods.
+Refresh halaman beberapa kali untuk memastikan request terdistribusi ke beberapa pod.
 
 ---
 
----
 ## phpMyAdmin
 
 URL:
@@ -498,7 +618,7 @@ URL:
 http://IP_SERVER:30090
 ```
 
-Login using your MariaDB/MySQL credentials.
+Login menggunakan credential MariaDB/MySQL.
 
 ---
 
@@ -512,7 +632,13 @@ kubectl get all -n monitoring
 
 # Useful Kubernetes Commands
 
+Bagian berikut berisi command Kubernetes yang sering digunakan untuk monitoring, debugging, dan management cluster.
+
+---
+
 ## Show All Resources
+
+Menampilkan seluruh resource di semua namespace:
 
 ```bash
 kubectl get all -A
@@ -522,6 +648,8 @@ kubectl get all -A
 
 ## Check Services
 
+Menampilkan daftar service:
+
 ```bash
 kubectl get svc -A
 ```
@@ -529,6 +657,8 @@ kubectl get svc -A
 ---
 
 ## Check Pods
+
+Menampilkan seluruh pod:
 
 ```bash
 kubectl get pod -A
@@ -538,6 +668,8 @@ kubectl get pod -A
 
 ## Check Ingress
 
+Menampilkan ingress:
+
 ```bash
 kubectl get ingress -A
 ```
@@ -546,11 +678,13 @@ kubectl get ingress -A
 
 ## Restart Deployment
 
+Restart deployment pada namespace tertentu:
+
 ```bash
 kubectl rollout restart deployment -n app
 ```
 
-Example:
+Contoh restart deployment Laravel:
 
 ```bash
 kubectl rollout restart deployment laravel -n app
@@ -560,6 +694,8 @@ kubectl rollout restart deployment laravel -n app
 
 ## View Deployment Logs
 
+Melihat log deployment secara realtime:
+
 ```bash
 kubectl logs -f deployment/laravel -n app
 ```
@@ -567,6 +703,8 @@ kubectl logs -f deployment/laravel -n app
 ---
 
 ## View Pod Logs
+
+Melihat log pod:
 
 ```bash
 kubectl logs -f POD_NAME -n app
@@ -576,6 +714,8 @@ kubectl logs -f POD_NAME -n app
 
 ## Enter Container
 
+Masuk ke shell container:
+
 ```bash
 kubectl exec -it POD_NAME -n app -- sh
 ```
@@ -583,6 +723,8 @@ kubectl exec -it POD_NAME -n app -- sh
 ---
 
 ## Delete Pod
+
+Menghapus pod:
 
 ```bash
 kubectl delete pod POD_NAME -n app
@@ -592,6 +734,8 @@ kubectl delete pod POD_NAME -n app
 
 ## Apply Manifest
 
+Apply manifest Kubernetes:
+
 ```bash
 kubectl apply -f .
 ```
@@ -599,6 +743,8 @@ kubectl apply -f .
 ---
 
 ## Delete Manifest
+
+Menghapus manifest Kubernetes:
 
 ```bash
 kubectl delete -f .
@@ -621,6 +767,8 @@ kubectl delete -f .
 
 ## UFW Example
 
+Buka port yang diperlukan:
+
 ```bash
 ufw allow 80/tcp
 
@@ -637,9 +785,15 @@ ufw allow 30090/tcp
 
 ## Pod CrashLoopBackOff
 
+Cek detail pod:
+
 ```bash
 kubectl describe pod POD_NAME -n app
+```
 
+Lihat log pod:
+
+```bash
 kubectl logs POD_NAME -n app
 ```
 
@@ -647,13 +801,13 @@ kubectl logs POD_NAME -n app
 
 ## Service Cannot Be Accessed
 
-Check services:
+Cek service Kubernetes:
 
 ```bash
 kubectl get svc -A
 ```
 
-Check firewall:
+Cek firewall:
 
 ```bash
 ufw status
@@ -663,6 +817,8 @@ ufw status
 
 ## Ingress Not Working
 
+Cek ingress controller:
+
 ```bash
 kubectl get pods -n ingress-nginx
 ```
@@ -671,4 +827,4 @@ kubectl get pods -n ingress-nginx
 
 # Maintainer
 
-Project maintained for Kubernetes deployment, monitoring, autoscaling, and CI/CD automation using GitHub Actions Runner.
+Project ini dibuat untuk deployment Kubernetes, monitoring, autoscaling, dan otomasi CI/CD menggunakan GitHub Actions Runner.
